@@ -1,0 +1,16 @@
+Red: #F78491
+Yellow: #F5DE8F
+Green: #93E096
+
+Blood: #DF0600
+Text: #000
+
+Bar Background: #4D4D4D
+Bar Border: #999
+
+Red Person: #F17688
+Green Person: #59B400
+Purple Person: #BC74FF
+Yellow Person: #FFE51F
+
+Interface Background: #E6E6E6

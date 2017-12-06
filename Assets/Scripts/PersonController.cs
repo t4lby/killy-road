@@ -14,11 +14,15 @@ public class PersonController : SortedObject {
         crossedNear,
         crossedFar,
         Dead,
-        fading
+        fading,
+        fixing
     }
+
 
     public LightController pedestrianLight;
     public GameController gameController;
+
+    public Sprite[] images;
 
     public GameObject bloodSplat;
     public GameObject bloodPile;
@@ -30,10 +34,12 @@ public class PersonController : SortedObject {
     public Vector3 crossFar;
     public float waitRadius;
     public State state;
-    public float walkSpeed;
+    public float initialWalkSpeed;
+    public float walkSpeedDiff;
     public float wobbleAmount;
     public float wobbleSpeed;
     public float initialBasePoint = -0.7f;
+    public float deadBasePoint = -0.2f;
     public float fallSpeed;
     public float fallRotationSpeed;
     public float fadeRate;
@@ -46,6 +52,7 @@ public class PersonController : SortedObject {
     private SpriteRenderer sr;
     private float opacity;
     private float idleDiff;
+    private float walkSpeed;
 
 
 	// Use this for initialization
@@ -56,6 +63,8 @@ public class PersonController : SortedObject {
          * RANDOM position near crossing
          *
         */
+        
+
         state = (State) Random.Range(0, 2);
         int lr = Random.Range(0, 2);
         transform.position = startPoints[state == State.sidewalkNear ? lr + 2 : lr];
@@ -67,8 +76,10 @@ public class PersonController : SortedObject {
         basePoint = initialBasePoint;
 
         sr = GetComponent<SpriteRenderer>();
+        sr.sprite = images[Random.Range(0, images.Length)];
         opacity = 1f;
         idleDiff = Random.Range(0f, 3f);
+        walkSpeed = Random.Range(initialWalkSpeed - walkSpeedDiff, initialWalkSpeed + walkSpeedDiff);
     }
 	
 	
@@ -133,6 +144,7 @@ public class PersonController : SortedObject {
                     state = State.fading;
                     bloodPile.transform.localScale = new Vector3(0.3f, 0.3f, 1);
                     bloodPile.SetActive(true);
+                    gameController.spawnDeathToken(transform.position);
                 }  
                 break;
             case State.fading:
@@ -148,12 +160,23 @@ public class PersonController : SortedObject {
         
         if (collision.gameObject.tag == "car")
         {
-            state = State.Dead;
-            carVelocity = collision.gameObject.GetComponent<CarController>().velocity;
+            if (state != State.Dead && state != State.fading)
+                state = State.Dead;
+            CarController controller = collision.gameObject.GetComponent<CarController>();
+            carVelocity = controller.velocity;
             deathVector = (transform.position - collision.transform.position).normalized * carVelocity.magnitude;
+
+            if (controller.collided == false)
+            {
+                gameController.crashes += 1;
+                gameController.crashCountText.text = "" + gameController.crashes;
+                controller.collided = true;
+            }
 
             bloodSplat.transform.localScale = new Vector3(0,0,1);
             bloodSplat.SetActive(true);
+
+            basePoint = deadBasePoint;
         }
     }
 
@@ -215,7 +238,11 @@ public class PersonController : SortedObject {
     private void Fade()
     {
         if (opacity < 0f)
+        {
+            bloodPile.SetActive(false);
             gameController.destroySprite(this);
+        }
+            
 
         bloodPile.transform.localScale += (new Vector3(1, 1, 0)) * pileSpeed * Time.deltaTime;
         opacity -= fadeRate * Time.deltaTime;
