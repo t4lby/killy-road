@@ -5,6 +5,7 @@ using UnityEngine;
 public class CarController : SortedObject {
 
     public GameController gameController;
+    public Sprite[] images;
 
     public float smoothTime;
     public LightController trafficLight;
@@ -14,12 +15,14 @@ public class CarController : SortedObject {
     public Vector3 endPoint;
     public float initialAcceleration = 0.1f;
     public float accelerationDiff = 0.05f;
+    public float maxCarSpeed = 1f;
     public bool goingRight;
     public bool collided;
 
     public Vector3 velocity;
     private const float SMALL = 0.5f;
     private float acceleration;
+    private SpriteRenderer sr;
 
 
     void Start () {
@@ -27,6 +30,8 @@ public class CarController : SortedObject {
         transform.position = startPos;
         acceleration = Random.Range(initialAcceleration - accelerationDiff, initialAcceleration + accelerationDiff);
         collided = false;
+        sr = GetComponent<SpriteRenderer>();
+        sr.sprite = images[Random.Range(0, images.Length)];
 	}
 	
 	void Update () {
@@ -40,7 +45,8 @@ public class CarController : SortedObject {
 
         if (trafficLight.vehicleState == LightController.State.green || (goingRight ? transform.position.x > waitPoint.x : transform.position.x < waitPoint.x))
         {
-            velocity += acceleration*(endPoint - transform.position).normalized;
+            if (velocity.magnitude < maxCarSpeed)
+                velocity += acceleration*(endPoint - transform.position).normalized;
             transform.position += velocity*Time.deltaTime;
         }
         basePoint = initialBasePoint;
@@ -49,9 +55,16 @@ public class CarController : SortedObject {
         {
             gameController.destroySprite(this);
             if (goingRight)
-                gameController.spawnNextCar = true;
+            {
+                gameController.nextCarTime1 = Time.time + gameController.randomCarTime(gameController.carSpawnTime, gameController.carSpawnVariance);
+                gameController.spawnNextCar1 = true;
+            }
             else
+            {
+                gameController.nextCarTime2 = Time.time + gameController.randomCarTime(gameController.carSpawnTime, gameController.carSpawnVariance);
                 gameController.spawnNextCar2 = true;
+            }
+                
         }
     }
 }

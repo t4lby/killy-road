@@ -17,7 +17,7 @@ public class LightController : SortedObject {
     public State vehicleState;
     public State pedestrianState;
     public float initialBasePoint = -1.25f; //point of ground (for sorting) relative to center.
-
+    public bool hasControl;
 
     public GameObject greenLight;
     public GameObject yellowLight;
@@ -38,7 +38,8 @@ public class LightController : SortedObject {
 
     // Use this for initialization
     void Start () {
-        
+        hasControl = true;
+
         basePoint = initialBasePoint;
 
         lights = new GameObject[5];
@@ -129,29 +130,41 @@ public class LightController : SortedObject {
 
     public void greenClicked()
     {
-        interrupted = true;
-        interruptionEnd = Time.time + interruptionTime;
-        greenChange();
+        if (hasControl)
+        {
+            interrupted = true;
+            interruptionEnd = Time.time + interruptionTime;
+            greenChange();
+        }
     }
 
     public void redClicked()
-    {
-        interrupted = true;
-        interruptionEnd = Time.time + interruptionTime;
-        redChange();
+    {   
+        if (hasControl)
+        {
+            interrupted = true;
+            interruptionEnd = Time.time + interruptionTime;
+            redChange();
+        }
     }
 
     public void greenManClicked()
     {
-        interrupted = true;
-        interruptionEnd = Time.time + interruptionTime;
-        greenManChange();
+        if (hasControl)
+        {
+            interrupted = true;
+            interruptionEnd = Time.time + interruptionTime;
+            greenManChange();
+        }
     }
     public void redManClicked()
     {
-        interrupted = true;
-        interruptionEnd = Time.time + interruptionTime;
-        redManChange();
+        if (hasControl)
+        {
+            interrupted = true;
+            interruptionEnd = Time.time + interruptionTime;
+            redManChange();
+        }
     }
 
     private void greenChange()

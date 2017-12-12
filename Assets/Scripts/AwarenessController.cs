@@ -7,13 +7,14 @@ public class AwarenessController : MonoBehaviour {
     public GameController gameController;
     public float decrease;
     public RectTransform.Edge bottom;
+    public float barPercentage;
 
     private Image img;
     private RectTransform rt;
     private float originalHeight;
     private float originalYPos;
     private float crashCount2;
-    private float barPercentage;
+
 
     // Use this for initialization
     void Start () {

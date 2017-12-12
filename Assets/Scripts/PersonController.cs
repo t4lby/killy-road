@@ -15,7 +15,8 @@ public class PersonController : SortedObject {
         crossedFar,
         Dead,
         fading,
-        fixing
+        fixing,
+        completedFix
     }
 
 
@@ -26,37 +27,38 @@ public class PersonController : SortedObject {
 
     public GameObject bloodSplat;
     public GameObject bloodPile;
-    public float splatSpeed;
-    public float pileSpeed;
+    public float splatSpeed = 10f;
+    public float pileSpeed = 0.7f;
 
     public Vector3[] startPoints; //0 - top left, 1- top right, 2- bottom right, 3- bottom left
-    public Vector3 crossNear;
-    public Vector3 crossFar;
-    public float waitRadius;
+    public Vector3 crossNear = new Vector3(-2.75f,-0.5f,0f);
+    public Vector3 crossFar = new Vector3(2f, 2.5f, 0f);
+    public float waitRadius = 0.6f;
     public State state;
-    public float initialWalkSpeed;
-    public float walkSpeedDiff;
-    public float wobbleAmount;
-    public float wobbleSpeed;
+    public float initialWalkSpeed = 1f;
+    public float walkSpeedDiff = 0.3f;
+    public float wobbleAmount = 3f;
+    public float wobbleSpeed = 15f;
     public float initialBasePoint = -0.7f;
     public float deadBasePoint = -0.2f;
-    public float fallSpeed;
-    public float fallRotationSpeed;
-    public float fadeRate;
-    public float idleBob;
+    public float fallSpeed = 0.7f;
+    public float fallRotationSpeed = 300f;
+    public float fadeRate = 0.3f;
+    public float idleBob = 0.1f;
+    public int startSide;
 
-    private const float SMALL = 0.01f;
-    private Vector3 destination;
-    private Vector3 carVelocity;
-    private Vector3 deathVector;
-    private SpriteRenderer sr;
-    private float opacity;
-    private float idleDiff;
-    private float walkSpeed;
+    protected const float SMALL = 0.05f;
+    protected Vector3 destination;
+    protected Vector3 carVelocity;
+    protected Vector3 deathVector;
+    protected SpriteRenderer sr;
+    protected float opacity;
+    protected float idleDiff;
+    protected float walkSpeed;
 
 
 	// Use this for initialization
-	void Start () {
+	protected void Start () {
         /*on start choose:
          * RANDOM SIDE
          * RANDOM END
@@ -65,7 +67,7 @@ public class PersonController : SortedObject {
         */
         
 
-        state = (State) Random.Range(0, 2);
+        state = (State) startSide;
         int lr = Random.Range(0, 2);
         transform.position = startPoints[state == State.sidewalkNear ? lr + 2 : lr];
         if (state == State.sidewalkNear)
@@ -83,95 +85,24 @@ public class PersonController : SortedObject {
     }
 	
 	
-	void Update () {
 
-        switch (state)
-        {
-            case State.sidewalkNear:
-                if (MoveTo(destination, walkSpeed))
-                    state = State.waitingNear;
-                break;
-            case State.sidewalkFar:
-                if (MoveTo(destination, walkSpeed))
-                    state = State.waitingFar;
-                break;
-            case State.waitingNear:
-                Idle();
-                if (pedestrianLight.pedestrianState == LightController.State.green)
-                {
-                    destination = randomInCircle(crossFar, waitRadius);
-                    state = State.crossingFar;
-                }
-                break;
-            case State.waitingFar:
-                Idle();
-                if (pedestrianLight.pedestrianState == LightController.State.green)
-                {
-                    destination = randomInCircle(crossNear, waitRadius);
-                    state = State.crossingNear;
-                }
-                break;
-            case State.crossingFar:
-                if (MoveTo(destination, walkSpeed))
-                {
-                    destination = startPoints[Random.Range(0, 2)];
-                    state = State.crossedFar;
-                }
-                break;
-            case State.crossingNear:
-                if (MoveTo(destination, walkSpeed))
-                {
-                    destination = startPoints[Random.Range(2, 4)];
-                    state = State.crossedNear;
-                }
-                break;
-            case State.crossedFar:
-                if (MoveTo(destination, walkSpeed))
-                {
-                    state = State.fading;
-                }
-                break;
-            case State.crossedNear:
-                if (MoveTo(destination, walkSpeed))
-                {
-                    state = State.fading;
-                }
-                break;
-            case State.Dead:
-                if (!Falling())
-                {
-                    bloodSplat.SetActive(false);
-                    state = State.fading;
-                    bloodPile.transform.localScale = new Vector3(0.3f, 0.3f, 1);
-                    bloodPile.SetActive(true);
-                    gameController.spawnDeathToken(transform.position);
-                }  
-                break;
-            case State.fading:
-                Fade();
-                break;
-            default:
-                break;
-        }
-    }
-
-    private void OnTriggerEnter2D(Collider2D collision)
+    protected void OnTriggerEnter2D(Collider2D collision)
     {
         
         if (collision.gameObject.tag == "car")
         {
-            if (state != State.Dead && state != State.fading)
-                state = State.Dead;
             CarController controller = collision.gameObject.GetComponent<CarController>();
             carVelocity = controller.velocity;
             deathVector = (transform.position - collision.transform.position).normalized * carVelocity.magnitude;
-
-            if (controller.collided == false)
+            if (controller.collided == false && state != State.Dead && state != State.fading)
             {
                 gameController.crashes += 1;
                 gameController.crashCountText.text = "" + gameController.crashes;
                 controller.collided = true;
             }
+
+            if (state != State.Dead && state != State.fading)
+                state = State.Dead;
 
             bloodSplat.transform.localScale = new Vector3(0,0,1);
             bloodSplat.SetActive(true);
@@ -180,7 +111,7 @@ public class PersonController : SortedObject {
         }
     }
 
-    private bool Falling()
+    protected bool Falling()
     {
         Vector3 angles = transform.eulerAngles;
         //Debug.Log(Vector3.Cross(carVelocity, deathVector).normalized);
@@ -208,7 +139,7 @@ public class PersonController : SortedObject {
         return true;
     }
 
-    private bool MoveTo(Vector3 point, float speed)
+    protected bool MoveTo(Vector3 point, float speed)
     {
         if ((transform.position - point).magnitude < SMALL)
             return true;
@@ -217,25 +148,20 @@ public class PersonController : SortedObject {
         return false;
     }
 
-    private void tilt()
+    protected void tilt()
     {
         Vector3 angles = new Vector3(0, 0, Mathf.Sin(Time.time* wobbleSpeed) * wobbleAmount);
         transform.eulerAngles = angles;
     }
 
-    private Vector3 randomInCircle(Vector3 centre, float radius)
+    protected Vector3 randomInCircle(Vector3 centre, float radius)
     {
         float randAngle = Random.Range(0f, 360f);
         Vector3 direction = new Vector3(Mathf.Sin(randAngle), Mathf.Cos(randAngle), 0);
         return centre + direction * radius;
     }
-
-    private float dot(Vector3 v1, Vector3 v2)
-    {
-        return (v1.x * v2.x + v1.y * v2.y * v1.z * v2.z);
-    }
     
-    private void Fade()
+    protected void Fade()
     {
         if (opacity < 0f)
         {
@@ -250,7 +176,7 @@ public class PersonController : SortedObject {
         
     }
 
-    private void Idle()
+    protected void Idle()
     {
         transform.eulerAngles = Vector3.zero;
         float cycleTime = 3f;

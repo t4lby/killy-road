@@ -2,61 +2,91 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class GameController : MonoBehaviour {
 
 
     public float[] spawnInterval;
-    public GameObject personPrefab;
+    public GameObject civilianPrefab;
+    public GameObject engineerPrefab;
     public GameObject carPrefab;
     public GameObject car2Prefab;
     public GameObject skullTokenPrefab;
     public LightController nearLights;
     public LightController farLights;
-    public bool spawnNextCar;
-    public bool spawnNextCar2;
+    public FixBoxController nearBox;
+    public FixBoxController farBox;
+    public float nextCarTime1;
+    public float nextCarTime2;
     public int killCount;
     public Text killCountText;
     public int crashes;
     public Text crashCountText;
+    public int tokenCount;
+    public AwarenessController awarenessController;
+    public float engineerSpawnTime = 60;
+    public GameObject gameOverImage;
+    public float carSpawnTime;
+    public float carSpawnVariance; // < carSpawnTime
+    public bool spawnNextCar1;
+    public bool spawnNextCar2;
 
     private List<SortedObject> spriteLocations;
     private float nextSpawnTime;
+    private float nextEngineer;
     private bool hasCollided;
 
 	
 	void Start () {
+
         nextSpawnTime = Time.time + 1;
+        nextEngineer = Time.time + 30;
 
         spriteLocations = new List<SortedObject>();
         spriteLocations.Add(nearLights);
         spriteLocations.Add(farLights);
+        spriteLocations.Add(nearBox);
+        spriteLocations.Add(farBox);
 
-        spawnNextCar = true;
+        nextCarTime1 = Time.time + randomCarTime(carSpawnTime,carSpawnVariance);
+        nextCarTime2 = Time.time + randomCarTime(carSpawnTime, carSpawnVariance);
+        spawnNextCar1 = true;
         spawnNextCar2 = true;
 
         hasCollided = false;
 
         killCount = 0;
+        tokenCount = 0;
+        crashes = 0;
+        gameOverImage.SetActive(false);
 	}
 	
 	void Update () {
-        int rands = Random.Range(1, 100);
 
         //check spawns
         if (Time.time > nextSpawnTime)
         {
-            spawnPerson();
+            spawnCivilian();
 
             nextSpawnTime = Time.time + Random.Range(spawnInterval[0], spawnInterval[1]);
         }
-        if (spawnNextCar && rands == 1)
+        if (Time.time > nextEngineer)
+        {
+            spawnEngineer();
+
+            float b = 1-awarenessController.barPercentage;
+            nextEngineer = Time.time + b * b * engineerSpawnTime;
+        }
+        if (Time.time > nextCarTime1 && spawnNextCar1)
         {
             spawnCar(1);
+            spawnNextCar1 = false;
         }
-        if (spawnNextCar2 && rands == 2)
+        if (Time.time > nextCarTime2 && spawnNextCar2)
         {
             spawnCar(2);
+            spawnNextCar2 = false;
         }
 
         //sort display order
@@ -68,16 +98,35 @@ public class GameController : MonoBehaviour {
             i++;
         }
         
+        if (nearBox.fixedNess >= 1 && farBox.fixedNess >=1)
+        {
+            gameOver();
+        }
         
 	}
 
-    private void spawnPerson()
+    private void spawnCivilian()
     {
-        GameObject instance = Instantiate(personPrefab);
-        PersonController controller = instance.GetComponent<PersonController>();
-        controller.pedestrianLight = nearLights;
+        GameObject instance = Instantiate(civilianPrefab);
+        CivilianController controller = instance.GetComponent<CivilianController>();
+        int startSide = Random.Range(0, 2);
+        controller.pedestrianLight = startSide < 1 ? nearLights: farLights; 
+        controller.startSide = startSide;
         controller.gameController = this;
         spriteLocations.Add(controller);
+    }
+
+    private void spawnEngineer()
+    {
+        GameObject instance = Instantiate(engineerPrefab);
+        EngineerController controller = instance.GetComponent<EngineerController>();
+        int startSide = Random.Range(0, 2);
+        controller.pedestrianLight = startSide < 1 ? nearLights : farLights; 
+        controller.startSide = startSide;
+        controller.gameController = this;
+        controller.boxController = startSide < 1 ? farBox : nearBox;
+        spriteLocations.Add(controller);
+
     }
 
     private void spawnCar(int type)
@@ -86,13 +135,8 @@ public class GameController : MonoBehaviour {
         GameObject instance = Instantiate(prefab);
         CarController controller = instance.GetComponent<CarController>();
         spriteLocations.Add(controller);
-        controller.trafficLight = nearLights;
+        controller.trafficLight = type == 1 ? farLights : nearLights;
         controller.gameController = this;
-
-        if (type == 1)
-            spawnNextCar = false;
-        else
-            spawnNextCar2 = false;
     }
 
     public void spawnDeathToken(Vector3 location)
@@ -117,4 +161,20 @@ public class GameController : MonoBehaviour {
         spriteLocations.Remove(toDelete);
         Destroy(toDelete.gameObject);
     }
+
+    private void gameOver()
+    {
+        PlayerPrefs.SetInt("Crashes", crashes);
+        PlayerPrefs.SetInt("Kills", killCount);
+        PlayerPrefs.SetInt("TokenCount", tokenCount);
+
+
+        SceneManager.LoadScene("gameOver", LoadSceneMode.Single);
+    }
+
+    public float randomCarTime(float mean, float variance)
+    {
+        return Random.Range(mean - variance, mean + variance);
+    }
+
 }
