@@ -38,21 +38,9 @@ public class SkullTokenController : SortedObject {
         destination = transform.position;
         idleDiff = Random.Range(0f, 3f);
         basePoint = initialBase;
-        int num = Random.Range(0, 10);
-        if (num == 0)
-        {
-            type = Type.token;
-            sr.sprite = token;
-            clicked = false;
-        }
-        else
-        {
-            type = Type.normal;
-            sr.sprite = skull;
-            clicked = true;
-        }
-        
-        
+        type = Type.normal;
+        sr.sprite = skull;
+        clicked = true;
     }
 
     // Update is called once per frame

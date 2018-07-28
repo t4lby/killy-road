@@ -12,6 +12,7 @@ public class AwarenessController : MonoBehaviour {
     private Image img;
     private RectTransform rt;
     private float originalHeight;
+    private float originalWidth;
     private float originalYPos;
     private float crashCount2;
 
@@ -24,7 +25,7 @@ public class AwarenessController : MonoBehaviour {
 
         originalYPos = rt.anchoredPosition.y;
         originalHeight = rt.sizeDelta.y;
-
+        originalWidth = rt.sizeDelta.x;
         
 	}
 	
@@ -41,8 +42,8 @@ public class AwarenessController : MonoBehaviour {
         if (barPercentage > 0.1f)
             barPercentage -= decrease * Time.deltaTime;
 
-        rt.SetInsetAndSizeFromParentEdge(bottom, 0, originalHeight * barPercentage);
-
+        rt.sizeDelta =  new Vector2(originalWidth, originalHeight * barPercentage);
+        //rt.localPosition = new Vector3(0,-barPercentage * originalHeight / 2);
 
         img.color = new Color(2*barPercentage,2*(1-barPercentage),0,1f);
     }

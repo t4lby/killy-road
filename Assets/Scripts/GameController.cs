@@ -13,6 +13,7 @@ public class GameController : MonoBehaviour {
     public GameObject carPrefab;
     public GameObject car2Prefab;
     public GameObject skullTokenPrefab;
+    public GameObject comboText;
     public LightController nearLights;
     public LightController farLights;
     public FixBoxController nearBox;
@@ -26,11 +27,12 @@ public class GameController : MonoBehaviour {
     public int tokenCount;
     public AwarenessController awarenessController;
     public float engineerSpawnTime = 60;
-    public GameObject gameOverImage;
     public float carSpawnTime;
     public float carSpawnVariance; // < carSpawnTime
     public bool spawnNextCar1;
     public bool spawnNextCar2;
+    public int comboMultiplier;
+    public int comboThreshold;
 
     private List<SortedObject> spriteLocations;
     private float nextSpawnTime;
@@ -59,7 +61,9 @@ public class GameController : MonoBehaviour {
         killCount = 0;
         tokenCount = 0;
         crashes = 0;
-        gameOverImage.SetActive(false);
+        comboMultiplier = 1;
+
+        comboText.SetActive(false);
 	}
 	
 	void Update () {
@@ -76,7 +80,7 @@ public class GameController : MonoBehaviour {
             spawnEngineer();
 
             float b = 1-awarenessController.barPercentage;
-            nextEngineer = Time.time + b * b * engineerSpawnTime;
+            nextEngineer = Time.time + b * engineerSpawnTime;
         }
         if (Time.time > nextCarTime1 && spawnNextCar1)
         {
@@ -146,7 +150,12 @@ public class GameController : MonoBehaviour {
         SkullTokenController controller = instance.GetComponent<SkullTokenController>();
         spriteLocations.Add(controller);
         controller.gameController = this;
+    }
 
+    public void DisplayComboText()
+    {
+        comboText.GetComponent<ComboTextController>().SetDeathTime();
+        comboText.SetActive(true);
     }
     
 
@@ -162,12 +171,11 @@ public class GameController : MonoBehaviour {
         Destroy(toDelete.gameObject);
     }
 
-    private void gameOver()
+    public void gameOver()
     {
-        PlayerPrefs.SetInt("Crashes", crashes);
-        PlayerPrefs.SetInt("Kills", killCount);
-        PlayerPrefs.SetInt("TokenCount", tokenCount);
-
+        Scores.Kills = killCount;
+        Scores.Crashes = crashes;
+        Scores.Combos = comboMultiplier;
 
         SceneManager.LoadScene("gameOver", LoadSceneMode.Single);
     }

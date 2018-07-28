@@ -17,21 +17,23 @@ public class CarController : SortedObject {
     public float accelerationDiff = 0.05f;
     public float maxCarSpeed = 1f;
     public bool goingRight;
-    public bool collided;
+    public int killCount;
 
     public Vector3 velocity;
     private const float SMALL = 0.5f;
     private float acceleration;
     private SpriteRenderer sr;
+    private bool comboTextDisplayed;
 
 
     void Start () {
         basePoint = initialBasePoint;
         transform.position = startPos;
         acceleration = Random.Range(initialAcceleration - accelerationDiff, initialAcceleration + accelerationDiff);
-        collided = false;
+        killCount = 0;
         sr = GetComponent<SpriteRenderer>();
         sr.sprite = images[Random.Range(0, images.Length)];
+        comboTextDisplayed = false;
 	}
 	
 	void Update () {
@@ -51,6 +53,13 @@ public class CarController : SortedObject {
         }
         basePoint = initialBasePoint;
 
+        if (killCount >= gameController.comboThreshold && !comboTextDisplayed)
+        {
+            gameController.comboMultiplier += 1;
+            gameController.DisplayComboText();
+            comboTextDisplayed = true;
+        }
+
         if ((transform.position - endPoint).magnitude < SMALL)
         {
             gameController.destroySprite(this);
@@ -63,8 +72,7 @@ public class CarController : SortedObject {
             {
                 gameController.nextCarTime2 = Time.time + gameController.randomCarTime(gameController.carSpawnTime, gameController.carSpawnVariance);
                 gameController.spawnNextCar2 = true;
-            }
-                
+            }  
         }
     }
 }

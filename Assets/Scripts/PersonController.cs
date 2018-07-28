@@ -23,7 +23,8 @@ public class PersonController : SortedObject {
     public LightController pedestrianLight;
     public GameController gameController;
 
-    public Sprite[] images;
+    public Sprite[] aliveImages;
+    public Sprite[] deadImages;
 
     public GameObject bloodSplat;
     public GameObject bloodPile;
@@ -56,6 +57,8 @@ public class PersonController : SortedObject {
     protected float idleDiff;
     protected float walkSpeed;
 
+    private int imgIndex;
+
 
 	// Use this for initialization
 	protected void Start () {
@@ -78,7 +81,8 @@ public class PersonController : SortedObject {
         basePoint = initialBasePoint;
 
         sr = GetComponent<SpriteRenderer>();
-        sr.sprite = images[Random.Range(0, images.Length)];
+        imgIndex = Random.Range(0, aliveImages.Length);
+        sr.sprite = aliveImages[imgIndex];
         opacity = 1f;
         idleDiff = Random.Range(0f, 3f);
         walkSpeed = Random.Range(initialWalkSpeed - walkSpeedDiff, initialWalkSpeed + walkSpeedDiff);
@@ -94,15 +98,19 @@ public class PersonController : SortedObject {
             CarController controller = collision.gameObject.GetComponent<CarController>();
             carVelocity = controller.velocity;
             deathVector = (transform.position - collision.transform.position).normalized * carVelocity.magnitude;
-            if (controller.collided == false && state != State.Dead && state != State.fading)
+            if (state != State.Dead && state != State.fading)
             {
-                gameController.crashes += 1;
-                gameController.crashCountText.text = "" + gameController.crashes;
-                controller.collided = true;
+                if (controller.killCount == 0)
+                {
+                    gameController.crashes += 1;
+                    gameController.crashCountText.text = "" + gameController.crashes;
+                }
+                controller.killCount += 1;
+                state = State.Dead;
+                sr.sprite = deadImages[imgIndex];
             }
 
-            if (state != State.Dead && state != State.fading)
-                state = State.Dead;
+            
 
             bloodSplat.transform.localScale = new Vector3(0,0,1);
             bloodSplat.SetActive(true);
